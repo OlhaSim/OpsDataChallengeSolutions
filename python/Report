@@ -1,0 +1,16 @@
+import pandas as pd
+
+def concatData (payout, vat, tga):
+
+    df_payout = pd.read_csv(payout, sep=";")
+    df_vat = pd.read_csv(vat, sep=";")
+    df_tga = pd.read_csv(tga, sep=";")
+
+    # Merge all data frames on the metering_point_id column
+    report = df_payout.merge(df_vat, on="metering_point_id")
+    report = report.merge(df_tga, on="metering_point_id")
+
+    report.to_csv("solutions/report.csv", sep=";", index=False)
+
+
+concatData("solutions/infeed_payout.csv", "solutions/payout_VAT.csv", "solutions/payout_TGA.csv")

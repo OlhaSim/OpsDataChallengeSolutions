@@ -1,0 +1,46 @@
+import json
+import pandas as pd
+
+# Calculating imbalance cost for each asset at every timestamp 
+def calculate_imbalance (forecast_json, measured_col_csv):
+    
+    # First we convert data from json (forecasts) into data frame and read the data from csv file (measured)
+    with open(forecast_json) as f:
+        forecast = json.load(f)
+
+    df_forecast = pd.DataFrame.from_dict(forecast["values"], orient="index", columns=["value"])
+    df_forecast = df_forecast.reset_index()
+
+    df_measured = pd.read_csv("measured_20241013.csv",  sep=";").reset_index(drop=True)
+
+    df_penalty = pd.read_csv("imbalance_penalty.csv", sep=";").reset_index(drop=True)
+
+    # Then we calculate by the formula: imbalance = (forecast - measured) * penalty
+    imbalance_result = []
+    for i in range(len(df_forecast)):
+                timestamp = df_forecast.loc[i, "index"]
+                val_forecast = df_forecast.loc[i, "value"]
+                val_measured = df_measured.loc[i, measured_col_csv]
+                val_penalty = df_penalty.loc[i, "imbalance_penalty"]
+
+                imbalance = abs(val_forecast - val_measured)/1000*val_penalty # we divide difference into 1000 to get results in mw
+                
+                imbalance_result.append(imbalance)
+
+    total_imbalance = sum(imbalance_result)
+
+    # Save result as dataframe with metering point as index and imbalance column
+    df_total_imbalance = pd.DataFrame({measured_col_csv: [total_imbalance]}).T
+    df_total_imbalance.columns = ['imbalance']
+    df_total_imbalance.index.name = 'metering_point'
+
+    # Save CSV file
+    df_total_imbalance.to_csv(f"solutions/imbalance_{measured_col_csv}.csv", sep=";")
+
+    return df_total_imbalance
+
+# Applying this method to all of the 4 assets
+calculate_imbalance("forecasts/a1.json", "mp_1")
+calculate_imbalance("forecasts/a2.json", "mp_2")
+calculate_imbalance("forecasts/a3.json", "mp_3")
+calculate_imbalance("forecasts/a4.json", "mp_4")

@@ -1,0 +1,142 @@
+import pandas as pd
+
+# Calculating infeed payout based on the price model - fixed or market
+def calculate_infeed_payout(base_data_path, measured_path, market_index_path):
+    
+    # Loading data
+    df_base_data = pd.read_csv(base_data_path, sep=";")
+    df_measured = pd.read_csv(measured_path, sep=";")
+    df_market_index = pd.read_csv(market_index_path, sep=";")
+
+    df_measured.columns = df_measured.columns.astype(str)
+    df_base_data["metering_point_id"] = df_base_data["metering_point_id"].astype(str)
+
+    # Building price map for fixed
+    price_map = dict(zip(
+        df_base_data[df_base_data["price_model"] == "fixed"]["metering_point_id"],
+        df_base_data[df_base_data["price_model"] == "fixed"]["price__eur_per_mwh"]
+    ))
+
+    # Making 2 separate lists for assets with fixed and market price models
+    fixed_mp_ids = list(price_map.keys())
+    market_mp_ids = df_base_data[df_base_data["price_model"] == "market"]["metering_point_id"].tolist()
+
+    # A dictionary for saving results
+    total_payout_mp = {}
+
+    # Fixed price model
+    for mp in fixed_mp_ids:
+        if mp in df_measured.columns:
+            total_payout_mp[mp] = (df_measured[mp] * price_map[mp]).sum()
+
+    # Market price model
+    for mp in market_mp_ids:
+        if mp in df_measured.columns:
+            total_payout_mp[mp] = (df_measured[mp] * df_market_index["market_index_price"]).sum()
+
+    # Convert dictionary to DataFrame
+    df_payout = pd.DataFrame.from_dict(total_payout_mp, orient="index", columns=["total_payout"])
+    df_payout = df_payout.reset_index().rename(columns={"index": "metering_point_id"})
+    df_payout.to_csv("solutions/infeed_payout.csv",  sep=";", index=False)
+    return df_payout
+
+
+def calculate_fee(base_data_path, measured_path, market_index_path):
+
+
+    df_base_data = pd.read_csv(base_data_path, sep=";")
+    df_measured = pd.read_csv(measured_path, sep=";")
+    df_market_index = pd.read_csv(market_index_path, sep=";")
+
+    df_measured.columns = df_measured.columns.astype(str)
+    df_base_data["metering_point_id"] = df_base_data["metering_point_id"].astype(str)
+
+    fixed_fee_map = dict(zip(
+        df_base_data[df_base_data["fee_model"] == "fixed_as_produced"]["metering_point_id"],
+        df_base_data[df_base_data["fee_model"] == "fixed_as_produced"]["fee__eur_per_mwh"]
+    ))
+
+    
+    market_fee_map = dict(zip(
+        df_base_data[df_base_data["fee_model"] == "percent_of_market"]["metering_point_id"],
+        df_base_data[df_base_data["fee_model"] == "percent_of_market"]["fee_percent"]
+    ))
+
+
+
+    fixed_as_produced_ids = df_base_data[df_base_data["fee_model"] == "fixed_as_produced"]["metering_point_id"].tolist()
+    percent_of_market_ids = df_base_data[df_base_data["fee_model"] == "percent_of_market"]["metering_point_id"].tolist()
+
+    # df_result = df_measured.copy().set_index("delivery_start")
+    average_market_index = df_market_index['market_index_price'].mean()
+
+    total_fee_mp = {}
+
+    for mp in fixed_as_produced_ids:
+        if mp in df_measured.columns:
+            total_fee_mp[mp] = (df_measured[mp] * fixed_fee_map[mp]).sum()
+
+    for mp in percent_of_market_ids:
+        if mp in df_measured.columns:
+            total_fee_mp[mp] = (df_measured[mp] * market_fee_map[mp] * average_market_index).sum()
+
+
+    # Convert dictionary to DataFrame
+    df_fee = pd.DataFrame.from_dict(total_fee_mp, orient="index", columns=["total_fee"])
+    df_fee = df_fee.reset_index().rename(columns={"index": "metering_point_id"})
+    df_fee.to_csv("solutions/fee.csv",  sep=";", index=False)
+
+
+    
+
+
+        
+
+
+# Calculating VAT for each payout, which is 19% of the price
+def calculateVAT(p):
+    p_vat = p.copy()
+
+    
+    for col in p_vat.columns:
+            if col != "metering_point_id":
+                p_vat[col] = pd.to_numeric(p_vat[col], errors="coerce") * 0.19  
+    
+    p_vat.rename(columns={col: "vat" for col in p_vat.columns if col != "metering_point_id"}, inplace=True)
+    p_vat.to_csv("solutions/payout_VAT.csv", sep=";", index=False)
+    return p_vat
+
+
+
+
+  
+  
+
+
+# Adding VAT to the unitary net amount to get total gross amount 
+def calculate_total_gross_amount(p, p_vat):
+
+
+    p.set_index("metering_point_id", inplace=True)
+    p_vat.set_index("metering_point_id", inplace=True)
+
+    # Add payout and VAT to get total gross amount
+    total = p["total_payout"] + p_vat["vat"]
+
+    tga = total.reset_index()
+    tga.columns = ["metering_point_id", "tga"]
+
+    tga.to_csv("solutions/payout_TGA.csv", sep=";", index=False)
+    return tga
+
+
+# Applying all methods to get infeed payout, VAT and total gross amount
+payout = calculate_infeed_payout("assets_base_data.csv", "measured_20241013.csv", "market_index_price.csv")
+fee = calculate_fee("assets_base_data.csv", "measured_20241013.csv", "market_index_price.csv")
+payout_vat = calculateVAT(payout)
+total_gross_amount = calculate_total_gross_amount(payout, payout_vat)
+
+
+
+
+    
