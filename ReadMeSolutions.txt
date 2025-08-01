@@ -20,11 +20,11 @@ The results for each asset are stored as separate files (imbalance_mp1, imbalanc
 
 3. Invoicing
 
-There are 4 methods here. The first method calculates the infeed payout: measured * price. Measured production is also converted in MW 
-by dividing into 1000.
+There are 4 methods here. The first method calculates the infeed payout: measured production * price. Measured production 
+is also converted in MW by dividing into 1000.
 If price is fixed, we take it from the file with base data. If market price modeling is used, we take the index from market_index_prices.csv. 
 
-The second methods does the similar but for fee: at this point the method only calculates fee for "fixed as produced" 
+The second methods calculates the fee: at this point the method only works for "fixed as produced" 
 and "percent of market" fee models. 
 
 fee (fixed as produced) = measured * fee__eur_per_mwh
