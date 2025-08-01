@@ -27,12 +27,12 @@ def calculate_infeed_payout(base_data_path, measured_path, market_index_path):
     # Fixed price model
     for mp in fixed_mp_ids:
         if mp in df_measured.columns:
-            total_payout_mp[mp] = (df_measured[mp] * price_map[mp]).sum()
+            total_payout_mp[mp] = (df_measured[mp] / 1000 * price_map[mp]).sum()
 
     # Market price model
     for mp in market_mp_ids:
         if mp in df_measured.columns:
-            total_payout_mp[mp] = (df_measured[mp] * df_market_index["market_index_price"]).sum()
+            total_payout_mp[mp] = (df_measured[mp] / 1000 * df_market_index["market_index_price"]).sum()
 
     # Convert dictionary to DataFrame
     df_payout = pd.DataFrame.from_dict(total_payout_mp, orient="index", columns=["total_payout"])
@@ -73,11 +73,11 @@ def calculate_fee(base_data_path, measured_path, market_index_path):
 
     for mp in fixed_as_produced_ids:
         if mp in df_measured.columns:
-            total_fee_mp[mp] = (df_measured[mp] * fixed_fee_map[mp]).sum()
+            total_fee_mp[mp] = (df_measured[mp] / 1000 * fixed_fee_map[mp]).sum()
 
     for mp in percent_of_market_ids:
         if mp in df_measured.columns:
-            total_fee_mp[mp] = (df_measured[mp] * market_fee_map[mp] * average_market_index).sum()
+            total_fee_mp[mp] = (df_measured[mp] / 1000 * market_fee_map[mp] / 100 * average_market_index).sum()
 
 
     # Convert dictionary to DataFrame
