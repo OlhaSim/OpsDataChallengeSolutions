@@ -67,7 +67,6 @@ def calculate_fee(base_data_path, measured_path, market_index_path):
     fixed_as_produced_ids = df_base_data[df_base_data["fee_model"] == "fixed_as_produced"]["metering_point_id"].tolist()
     percent_of_market_ids = df_base_data[df_base_data["fee_model"] == "percent_of_market"]["metering_point_id"].tolist()
 
-    # df_result = df_measured.copy().set_index("delivery_start")
     average_market_index = df_market_index['market_index_price'].mean()
 
     total_fee_mp = {}
