@@ -33,4 +33,4 @@ fee (market percent) = measured * fee_percent * average market index
 Third and forth methods calculate VAT and total gross amount of the infeed payout. 
 
 4. Report
-This methods should summarize the data for all assets as a table. Now it only has data about infeed payout. 
+This method should summarize the data for all assets as a table. Now it only has data about infeed payout. 

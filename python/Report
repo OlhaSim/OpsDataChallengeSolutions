@@ -1,5 +1,6 @@
 import pandas as pd
 
+# This method summarizes the data that was calculated in Invoicing 
 def concatData (payout, vat, tga):
 
     df_payout = pd.read_csv(payout, sep=";")
